@@ -1,0 +1,79 @@
+-- Delete unnecessary columns in test
+ALTER TABLE phoebe.test 
+DROP COLUMN "No.",
+DROP COLUMN "PC Resource",
+DROP COLUMN "Current Laptop Spec",
+DROP COLUMN "Headphone Resource",
+DROP COLUMN "Số mũi Vaccin",
+DROP COLUMN "Size Áo",
+DROP COLUMN "Looker Dev",
+DROP COLUMN "Cognos",
+DROP COLUMN "OPUS",
+DROP COLUMN "Create 2 Authen / Change PW",
+DROP COLUMN "CLV End Date";
+
+-- Change CLV Start, Looker Start, "DoB" into date type
+-- Change Employee ID (test) into varchar(50)
+ALTER TABLE phoebe.test
+ALTER COLUMN "CLV Start"
+	TYPE date
+	USING "CLV Start"::date;
+ALTER TABLE phoebe.test
+ALTER COLUMN "Looker Start"
+	TYPE date
+	USING "Looker Start"::date;
+ALTER TABLE phoebe.test
+ALTER COLUMN "DoB"
+	TYPE date
+	USING "DoB"::date;
+ALTER TABLE phoebe.test
+ALTER COLUMN "Employee ID"
+	TYPE varchar(50)
+	USING "Employee ID"::varchar;
+
+-- Modify Hector's "DoB"
+UPDATE phoebe.test
+SET "DoB" = MAKE_DATE(
+			1999,
+			CAST(EXTRACT(MONTH FROM "DoB") AS INTEGER),
+			CAST(EXTRACT(DAY FROM "DoB") AS INTEGER)
+			)
+WHERE EXTRACT(YEAR FROM "DoB") = 2023;
+
+-- Remove dot from Phone Number
+UPDATE phoebe.test
+SET "Phone Number" = REPLACE("Phone Number", '.', '')
+WHERE "Phone Number" LIKE '%.%';
+
+-- Modify English Name (Anna's name issue)
+UPDATE phoebe.test
+SET "English Name" = SUBSTRING("Full Name", 1, POSITION ('(' IN "Full Name") - 2)
+	WHERE "English Name" <> SUBSTRING("Full Name", 1, POSITION ('(' IN "Full Name") - 2);
+
+-- Fill missing value for Jira Name
+UPDATE phoebe.test
+SET "Jira Name" = "Full Name"
+WHERE "Jira Name" = '';
+
+-- Fill missing value for Email (ONE)
+UPDATE phoebe.test
+SET "Email (ONE)" = CONCAT(
+	LOWER("English Name"),
+	'.',
+	LOWER(SUBSTRING("Full Name", POSITION (')' IN "Full Name") + 2)),
+	'.tpv@one-line.com'
+	)
+WHERE "Email (ONE)" = '';
+
+-- Change passport into boolean
+ALTER TABLE phoebe.test
+ALTER COLUMN "Passport"
+	TYPE boolean 
+    USING CASE 
+              WHEN "Passport" = 'Y' THEN TRUE 
+              WHEN "Passport" = 'N' THEN FALSE 
+          END;
+
+-- Set Employee ID as primary key of phoebe.test
+ALTER TABLE phoebe.test
+ADD CONSTRAINT test_pk PRIMARY KEY ("Employee ID");
